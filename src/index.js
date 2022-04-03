@@ -68,7 +68,7 @@ wss.on("connection", async (ws) => {
         ws.send(
           JSON.stringify({
             action: "pong",
-            time: Math.floor(Date.now() / 1000),
+            time: Date.now(),
           })
         );
         return;
