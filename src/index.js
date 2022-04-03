@@ -1,7 +1,7 @@
-const shortid = require('shortid');
-const http = require('http');
-const WebSocket = require('ws');
-const dotenv = require('dotenv');
+const shortid = require("shortid");
+const http = require("http");
+const WebSocket = require("ws");
+const dotenv = require("dotenv");
 
 dotenv.config();
 
@@ -13,15 +13,15 @@ const wss = new WebSocket.Server({ server });
 const rooms = {};
 
 // Broadcast
-server.on('request', async (req, res) => {
+server.on("request", async (req, res) => {
   try {
-    if (req.method === 'POST') {
-      const body = await new Promise(resolve => {
+    if (req.method === "POST") {
+      const body = await new Promise((resolve) => {
         const chunks = [];
 
         req
-          .on('data', chunk => chunks.push(chunk))
-          .on('end', () => resolve(Buffer.concat(chunks)));
+          .on("data", (chunk) => chunks.push(chunk))
+          .on("end", () => resolve(Buffer.concat(chunks)));
       });
 
       const { secret, webMessages } = JSON.parse(body);
@@ -51,27 +51,32 @@ server.on('request', async (req, res) => {
       res.write(JSON.stringify(out));
     }
   } catch (err) {
-    console.log('[ERROR]', new Date(), err);
+    console.log("[ERROR]", new Date(), err);
   }
 
   res.end();
 });
 
 // WS connection
-wss.on('connection', async ws => {
+wss.on("connection", async (ws) => {
   const connectionId = shortid();
   const connectionRooms = [];
 
-  ws.on('message', async body => {
+  ws.on("message", async (body) => {
     try {
-      if (body === 'ping') {
-        ws.send('pong');
+      if (body === "ping") {
+        ws.send(
+          JSON.stringify({
+            action: "pong",
+            time: Math.floor(Date.now() / 1000),
+          })
+        );
         return;
       }
 
       const request = JSON.parse(body);
 
-      if (request.action === 'subscribe') {
+      if (request.action === "subscribe") {
         const room = request.payload;
         connectionRooms.push(room);
 
@@ -80,7 +85,7 @@ wss.on('connection', async ws => {
         }
 
         rooms[room][connectionId] = ws;
-      } else if (request.action === 'unsubscribe') {
+      } else if (request.action === "unsubscribe") {
         const room = request.payload;
 
         if (connectionRooms.includes(room)) {
@@ -89,15 +94,17 @@ wss.on('connection', async ws => {
         }
       }
     } catch (err) {
-      console.log('[ERROR]', new Date(), err);
+      console.log("[ERROR]", new Date(), err);
     }
   });
 
-  ws.on('close', async () => {
+  ws.on("close", async () => {
     for (const room of connectionRooms) {
       delete rooms[room][connectionId];
     }
   });
 });
 
-server.listen(process.env.PORT, () => console.log(`diablorun-ws-server running on port ${process.env.PORT}`));
+server.listen(process.env.PORT, () =>
+  console.log(`diablorun-ws-server running on port ${process.env.PORT}`)
+);
